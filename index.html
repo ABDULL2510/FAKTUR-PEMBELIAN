@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Input Pembelian Barang</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white;
+            padding: 24px 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-card p {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Form Grid */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        input, select {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        input[readonly] {
+            background-color: #f1f5f9;
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-danger {
+            background-color: #fee2e2;
+            color: var(--danger);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger:hover {
+            background-color: #fca5a5;
+        }
+
+        /* Table Styling */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .empty-row td {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+            font-style: italic;
+        }
+
+        .table-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px dashed var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .grand-total-box {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 12px 20px;
+            border-radius: 10px;
+            text-align: right;
+        }
+
+        .grand-total-box .title {
+            font-size: 0.8rem;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        .grand-total-box .amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .badge {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header-card">
+        <div>
+            <h1><i class="fa-solid fa-cart-shopping"></i> Input Pembelian Barang</h1>
+            <p>Penginputan nota transaksi supplier ke Google Sheets</p>
+        </div>
+        <div>
+            <span class="badge"><i class="fa-solid fa-database"></i> DATA PEMBELIAN</span>
+        </div>
+    </div>
+
+    <!-- Section Input Nota & Barang -->
+    <div class="card">
+        <div class="card-title">
+            <i class="fa-solid fa-file-invoice"></i> Detail Informasi & Input Item Barang
+        </div>
+
+        <!-- Meta Nota -->
+        <div class="form-grid" style="margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div class="form-group">
+                <label>Nomor Nota / Faktur</label>
+                <input type="text" id="noNota" placeholder="Contoh: INV-2026-001" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Pembelian</label>
+                <input type="date" id="tglPembelian">
+            </div>
+            <div class="form-group">
+                <label>Nama Pemasok / Supplier</label>
+                <input type="text" id="namaSupplier" placeholder="Contoh: PT. Sumber Makmur">
+            </div>
+        </div>
+
+        <!-- Form Input Item -->
+        <form id="itemForm">
+            <div class="form-grid">
+                <!-- Dropdown Nama Barang -->
+                <div class="form-group full-width">
+                    <label>Nama Barang (Master Sheet: OPERATOR BARANG)</label>
+                    <select id="namaBarang" required onchange="onSelectBarang()">
+                        <option value="">-- Memuat Data Barang... --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Kode Barang (Auto Col C)</label>
+                    <input type="text" id="kodeBarang" placeholder="Otomatis" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Satuan (Auto Col D)</label>
+                    <input type="text" id="satuan" placeholder="Otomatis" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label>Jumlah (Qty)</label>
+                    <input type="number" id="qty" min="1" value="1" oninput="hitungTotal()" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Harga Satuan (Rp)</label>
+                    <input type="number" id="hargaSatuan" min="0" placeholder="0" oninput="hitungTotal()" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Diskon Total Item (Rp)</label>
+                    <input type="number" id="diskon" min="0" value="0" oninput="hitungTotal()">
+                </div>
+
+                <div class="form-group">
+                    <label>Total Harga Item (Otomatis)</label>
+                    <input type="text" id="totalHarga" placeholder="Rp 0" readonly style="font-weight: 700; color: var(--primary);">
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" onclick="tambahKeTabel()">
+                    <i class="fa-solid fa-plus"></i> Tambah Item ke Daftar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Section Summary / Collected Table -->
+    <div class="card">
+        <div class="card-title">
+            <i class="fa-solid fa-list-check"></i> Daftar Resume Item Pembelian (Nota Pemasok)
+        </div>
+
+        <div class="table-responsive">
+            <table id="tabelItem">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">No</th>
+                        <th>Kode</th>
+                        <th>Nama Barang</th>
+                        <th>Satuan</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Harga Satuan</th>
+                        <th style="text-align: right;">Diskon</th>
+                        <th style="text-align: right;">Total Harga</th>
+                        <th style="text-align: center; width: 80px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyTabel">
+                    <tr class="empty-row">
+                        <td colspan="9">Belum ada barang yang ditambah. Silakan isi form diatas dan klik "Tambah Item ke Daftar".</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <button type="button" class="btn btn-success" id="btnSubmit" onclick="submitKeSpreadsheet()">
+                <i class="fa-solid fa-paper-plane"></i> Submit Resume ke Spreadsheet (DATA PEMBELIAN)
+            </button>
+
+            <div class="grand-total-box">
+                <div class="title">TOTAL PEMBELIAN NOTA</div>
+                <div class="amount" id="grandTotalDisplay">Rp 0</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // KONFIGURASI URL APPS SCRIPT WEB APP (Tinggal ganti link dibawah ini)
+    // =========================================================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxYOUR_DEPLOYED_WEB_APP_ID_HERE/exec";
+
+    // Global Storage untuk Item dalam 1 Nota
+    let collectedItems = [];
+
+    // Init saat halaman dimuat
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('tglPembelian').valueAsDate = new Date();
+        fetchMasterBarang();
+    });
+
+    // Auto-fetch Master Barang dari Apps Script Sheet "OPERATOR BARANG"
+    function fetchMasterBarang() {
+        const select = document.getElementById('namaBarang');
+
+        if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_ID_HERE")) {
+            // Demo fallback jika URL Apps Script belum diganti
+            select.innerHTML = `
+                <option value="">-- Pilih Barang (Demo Data) --</option>
+                <option value="Semen Tiga Roda 50kg" data-kode="BRG-001" data-satuan="Sak">Semen Tiga Roda 50kg</option>
+                <option value="Cat Tembok Nippon Paint 5kg" data-kode="BRG-002" data-satuan="Pail">Cat Tembok Nippon Paint 5kg</option>
+                <option value="Paku Kayu 3 Inch" data-kode="BRG-003" data-satuan="Kg">Paku Kayu 3 Inch</option>
+            `;
+            return;
+        }
+
+        fetch(SCRIPT_URL + '?action=getBarang')
+            .then(res => res.json())
+            .then(data => {
+                select.innerHTML = '<option value="">-- Pilih Barang --</option>';
+                if (data && data.length > 0) {
+                    data.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.nama;
+                        opt.setAttribute('data-kode', item.kode);
+                        opt.setAttribute('data-satuan', item.satuan);
+                        opt.textContent = `${item.nama} (${item.kode})`;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">-- Tidak Ada Data Barang --</option>';
+                }
+            })
+            .catch(err => {
+                console.error('Gagal mengambil master barang:', err);
+                select.innerHTML = '<option value="">-- Gagal Memuat Data Barang --</option>';
+            });
+    }
+
+    // Event Handler saat memilih Barang dari Dropdown
+    function onSelectBarang() {
+        const select = document.getElementById('namaBarang');
+        const selectedOption = select.options[select.selectedIndex];
+        
+        if (selectedOption && selectedOption.value !== "") {
+            const kode = selectedOption.getAttribute('data-kode') || '';
+            const satuan = selectedOption.getAttribute('data-satuan') || '';
+            
+            document.getElementById('kodeBarang').value = kode;
+            document.getElementById('satuan').value = satuan;
+        } else {
+            document.getElementById('kodeBarang').value = '';
+            document.getElementById('satuan').value = '';
+        }
+        hitungTotal();
+    }
+
+    // Fungsi Otomatis Hitung Total Harga Item = (Qty * Harga Satuan) - Diskon
+    function hitungTotal() {
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const hargaSatuan = parseFloat(document.getElementById('hargaSatuan').value) || 0;
+        const diskon = parseFloat(document.getElementById('diskon').value) || 0;
+
+        let total = (qty * hargaSatuan) - diskon;
+        if (total < 0) total = 0;
+
+        document.getElementById('totalHarga').value = formatRupiah(total);
+        document.getElementById('totalHarga').setAttribute('data-raw', total);
+    }
+
+    // Format Number ke Rupiah
+    function formatRupiah(number) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+    }
+
+    // Tambah Item ke Tabel Sementara (Collect)
+    function tambahKeTabel() {
+        const namaBarang = document.getElementById('namaBarang').value;
+        const kodeBarang = document.getElementById('kodeBarang').value;
+        const satuan = document.getElementById('satuan').value;
+        const qty = parseFloat(document.getElementById('qty').value) || 0;
+        const hargaSatuan = parseFloat(document.getElementById('hargaSatuan').value) || 0;
+        const diskon = parseFloat(document.getElementById('diskon').value) || 0;
+        const totalHarga = parseFloat(document.getElementById('totalHarga').getAttribute('data-raw')) || 0;
+
+        if (!namaBarang) {
+            alert('Pilih nama barang terlebih dahulu!');
+            return;
+        }
+        if (qty <= 0) {
+            alert('Jumlah (Qty) harus lebih besar dari 0!');
+            return;
+        }
+        if (hargaSatuan <= 0) {
+            alert('Harga satuan harus diisi!');
+            return;
+        }
+
+        const item = {
+            id: Date.now(),
+            namaBarang,
+            kodeBarang,
+            satuan,
+            qty,
+            hargaSatuan,
+            diskon,
+            totalHarga
+        };
+
+        collectedItems.push(item);
+        renderTabel();
+        resetItemForm();
+    }
+
+    // Render Tabel Item
+    function renderTabel() {
+        const tbody = document.getElementById('bodyTabel');
+        tbody.innerHTML = '';
+
+        if (collectedItems.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="9">Belum ada barang yang ditambah. Silakan isi form diatas dan klik "Tambah Item ke Daftar".</td>
+                </tr>
+            `;
+            document.getElementById('grandTotalDisplay').innerText = 'Rp 0';
+            return;
+        }
+
+        let grandTotal = 0;
+
+        collectedItems.forEach((item, index) => {
+            grandTotal += item.totalHarga;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td><span class="badge" style="background:#f1f5f9; color:#334155;">${item.kodeBarang}</span></td>
+                <td><strong>${item.namaBarang}</strong></td>
+                <td>${item.satuan}</td>
+                <td style="text-align: center;">${item.qty}</td>
+                <td style="text-align: right;">${formatRupiah(item.hargaSatuan)}</td>
+                <td style="text-align: right;">${formatRupiah(item.diskon)}</td>
+                <td style="text-align: right; font-weight: 600; color: var(--primary);">${formatRupiah(item.totalHarga)}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-danger" onclick="hapusItem(${item.id})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('grandTotalDisplay').innerText = formatRupiah(grandTotal);
+    }
+
+    // Hapus Item dari Tabel
+    function hapusItem(id) {
+        collectedItems = collectedItems.filter(item => item.id !== id);
+        renderTabel();
+    }
+
+    // Reset Form Input Item
+    function resetItemForm() {
+        document.getElementById('namaBarang').value = '';
+        document.getElementById('kodeBarang').value = '';
+        document.getElementById('satuan').value = '';
+        document.getElementById('qty').value = 1;
+        document.getElementById('hargaSatuan').value = '';
+        document.getElementById('diskon').value = 0;
+        document.getElementById('totalHarga').value = 'Rp 0';
+    }
+
+    // Submit Resume Tabel ke Google Spreadsheet
+    function submitKeSpreadsheet() {
+        const noNota = document.getElementById('noNota').value.trim();
+        const tglPembelian = document.getElementById('tglPembelian').value;
+        const namaSupplier = document.getElementById('namaSupplier').value.trim();
+
+        if (!noNota) {
+            alert('Harap isi Nomor Nota / Faktur terlebih dahulu!');
+            return;
+        }
+        if (collectedItems.length === 0) {
+            alert('Tabel masih kosong! Tambahkan minimal 1 barang sebelum submit.');
+            return;
+        }
+
+        const payload = {
+            noNota,
+            tglPembelian,
+            namaSupplier,
+            items: collectedItems
+        };
+
+        if (SCRIPT_URL && !SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_ID_HERE")) {
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Data...';
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                alert('Berhasil! Data resume pembelian telah dikirim ke Sheet "DATA PEMBELIAN".');
+                collectedItems = [];
+                renderTabel();
+                document.getElementById('noNota').value = '';
+                document.getElementById('namaSupplier').value = '';
+            })
+            .catch(err => {
+                alert('Gagal mengirim data: ' + err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Resume ke Spreadsheet (DATA PEMBELIAN)';
+            });
+        } else {
+            // Simulasi jika variabel SCRIPT_URL belum diganti dengan Web App ID asli
+            console.log('Payload Data Pembelian:', payload);
+            alert(`[MODE SIMULASI]
+Nota: ${noNota}
+Total Item: ${collectedItems.length}
+Grand Total: ${document.getElementById('grandTotalDisplay').innerText}
+
+*Catatan: Ganti variabel 'SCRIPT_URL' di bagian <script> dengan Web App URL Apps Script Anda.`);
+        }
+    }
+</script>
+</body>
+</html>
