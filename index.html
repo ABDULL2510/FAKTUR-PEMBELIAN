@@ -102,6 +102,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+            position: relative;
         }
 
         .form-group.full-width {
@@ -122,6 +123,7 @@
             outline: none;
             transition: all 0.2s ease;
             background-color: #fff;
+            width: 100%;
         }
 
         input:focus, select:focus {
@@ -133,6 +135,42 @@
             background-color: #f1f5f9;
             color: var(--text-muted);
             cursor: not-allowed;
+        }
+
+        /* Suggestion Box Styling */
+        .suggestion-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: none;
+            margin-top: 4px;
+        }
+
+        .suggestion-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover, .suggestion-item.active {
+            background-color: #eff6ff;
+            color: var(--primary);
         }
 
         .btn-group {
@@ -261,6 +299,15 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
+
+        .status-badge {
+            font-size: 0.75rem;
+            color: #0284c7;
+            background: #e0f2fe;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -293,30 +340,31 @@
                 <label>Tanggal Pembelian</label>
                 <input type="date" id="tglPembelian">
             </div>
+            <!-- Input Pemasok dengan Sugesti Auto-fetch (Sheet: OPERATOR BARANG Col F) -->
             <div class="form-group">
                 <label>Nama Pemasok / Supplier</label>
-                <input type="text" id="namaSupplier" placeholder="Contoh: PT. Sumber Makmur">
+                <input type="text" id="namaSupplier" placeholder="Ketik untuk mencari pemasok..." autocomplete="off">
+                <div id="supplierSuggestionList" class="suggestion-list"></div>
             </div>
         </div>
 
         <!-- Form Input Item -->
         <form id="itemForm">
             <div class="form-grid">
-                <!-- Dropdown Nama Barang -->
+                <!-- Input Nama Barang dengan Sugesti Pencarian Keyword Terdekat (Sheet: OPERATOR BARANG Col B) -->
                 <div class="form-group full-width">
-                    <label>Nama Barang (Master Sheet: OPERATOR BARANG)</label>
-                    <select id="namaBarang" required onchange="onSelectBarang()">
-                        <option value="">-- Memuat Data Barang... --</option>
-                    </select>
+                    <label>Cari Nama Barang (Keyword Terdekat)</label>
+                    <input type="text" id="namaBarangInput" placeholder="Ketik kata kunci nama barang..." autocomplete="off" required>
+                    <div id="barangSuggestionList" class="suggestion-list"></div>
                 </div>
 
                 <div class="form-group">
-                    <label>Kode Barang (Auto Col C)</label>
+                    <label>Kode Barang (Otomatis)</label>
                     <input type="text" id="kodeBarang" placeholder="Otomatis" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label>Satuan (Auto Col D)</label>
+                    <label>Satuan (Otomatis)</label>
                     <input type="text" id="satuan" placeholder="Otomatis" readonly>
                 </div>
 
@@ -393,76 +441,151 @@
 
 <script>
     // =========================================================================
-    // KONFIGURASI URL APPS SCRIPT WEB APP (Tinggal ganti link dibawah ini)
+    // URL GOOGLE APPS SCRIPT WEB APP
     // =========================================================================
-    const SCRIPT_URL = "https://script.google.com/macros/library/d/1eOftc-j50D-awL7JbFq1rKW4oKTiFfeEVN3ryibiMK-CHTo6COUFARvI/3";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx35M_WTDtJFd4YWnp6AEZP8FDeYrk5B4x5kjRInN4BSM1-U0WKgEg5JvoGRa6iLvq_/exec";
 
-    // Global Storage untuk Item dalam 1 Nota
+    // Data Master Cache
+    let masterBarang = [];
+    let masterPemasok = [];
     let collectedItems = [];
 
     // Init saat halaman dimuat
     document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('tglPembelian').valueAsDate = new Date();
-        fetchMasterBarang();
+        loadMasterData();
+
+        // Setup Event Listeners Sugesti Pencarian
+        setupBarangSearch();
+        setupSupplierSearch();
     });
 
-    // Auto-fetch Master Barang dari Apps Script Sheet "OPERATOR BARANG"
-    function fetchMasterBarang() {
-        const select = document.getElementById('namaBarang');
-
-        if (!SCRIPT_URL || SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_ID_HERE")) {
-            // Demo fallback jika URL Apps Script belum diganti
-            select.innerHTML = `
-                <option value="">-- Pilih Barang (Demo Data) --</option>
-                <option value="Semen Tiga Roda 50kg" data-kode="BRG-001" data-satuan="Sak">Semen Tiga Roda 50kg</option>
-                <option value="Cat Tembok Nippon Paint 5kg" data-kode="BRG-002" data-satuan="Pail">Cat Tembok Nippon Paint 5kg</option>
-                <option value="Paku Kayu 3 Inch" data-kode="BRG-003" data-satuan="Kg">Paku Kayu 3 Inch</option>
-            `;
-            return;
-        }
-
-        fetch(SCRIPT_URL + '?action=getBarang')
+    // Ambil Data Master Barang & Pemasok dari Google Apps Script
+    function loadMasterData() {
+        fetch(SCRIPT_URL + '?action=getBarangAndPemasok')
             .then(res => res.json())
             .then(data => {
-                select.innerHTML = '<option value="">-- Pilih Barang --</option>';
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item.nama;
-                        opt.setAttribute('data-kode', item.kode);
-                        opt.setAttribute('data-satuan', item.satuan);
-                        opt.textContent = `${item.nama} (${item.kode})`;
-                        select.appendChild(opt);
-                    });
-                } else {
-                    select.innerHTML = '<option value="">-- Tidak Ada Data Barang --</option>';
+                if (data) {
+                    masterBarang = data.barang || [];
+                    masterPemasok = data.pemasok || [];
+                    console.log("Master Barang & Pemasok Loaded Successfully");
                 }
             })
             .catch(err => {
-                console.error('Gagal mengambil master barang:', err);
-                select.innerHTML = '<option value="">-- Gagal Memuat Data Barang --</option>';
+                console.error("Gagal memuat master data dari Apps Script:", err);
             });
     }
 
-    // Event Handler saat memilih Barang dari Dropdown
-    function onSelectBarang() {
-        const select = document.getElementById('namaBarang');
-        const selectedOption = select.options[select.selectedIndex];
-        
-        if (selectedOption && selectedOption.value !== "") {
-            const kode = selectedOption.getAttribute('data-kode') || '';
-            const satuan = selectedOption.getAttribute('data-satuan') || '';
-            
-            document.getElementById('kodeBarang').value = kode;
-            document.getElementById('satuan').value = satuan;
-        } else {
-            document.getElementById('kodeBarang').value = '';
-            document.getElementById('satuan').value = '';
-        }
-        hitungTotal();
+    // =========================================================================
+    // SUGGESTION SEARCH (KEYWORD TERDEKAT) - BARANG
+    // =========================================================================
+    function setupBarangSearch() {
+        const input = document.getElementById('namaBarangInput');
+        const list = document.getElementById('barangSuggestionList');
+
+        input.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            list.innerHTML = '';
+
+            if (!query) {
+                list.style.display = 'none';
+                return;
+            }
+
+            // Filter keyword terdekat
+            const filtered = masterBarang.filter(item => 
+                item.nama.toLowerCase().includes(query) || 
+                item.kode.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="suggestion-item" style="color:#94a3b8; cursor:default;">Barang tidak ditemukan</div>`;
+            } else {
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `
+                        <span><strong>${highlightMatch(item.nama, query)}</strong></span>
+                        <span class="status-badge">${item.kode} | ${item.satuan}</span>
+                    `;
+                    div.onclick = function() {
+                        input.value = item.nama;
+                        document.getElementById('kodeBarang').value = item.kode;
+                        document.getElementById('satuan').value = item.satuan;
+                        list.style.display = 'none';
+                        hitungTotal();
+                    };
+                    list.appendChild(div);
+                });
+            }
+            list.style.display = 'block';
+        });
+
+        // Hide list when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.style.display = 'none';
+            }
+        });
     }
 
-    // Fungsi Otomatis Hitung Total Harga Item = (Qty * Harga Satuan) - Diskon
+    // =========================================================================
+    // SUGGESTION SEARCH (KEYWORD TERDEKAT) - PEMASOK / SUPPLIER
+    // =========================================================================
+    function setupSupplierSearch() {
+        const input = document.getElementById('namaSupplier');
+        const list = document.getElementById('supplierSuggestionList');
+
+        input.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            list.innerHTML = '';
+
+            if (!query) {
+                list.style.display = 'none';
+                return;
+            }
+
+            // Filter supplier terdekat dari Col F
+            const filtered = masterPemasok.filter(pemasok => pemasok.toLowerCase().includes(query));
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div class="suggestion-item" style="color:#94a3b8; cursor:default;">Pemasok tidak ditemukan (Bisa diketik manual)</div>`;
+            } else {
+                filtered.forEach(pemasok => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `<span>${highlightMatch(pemasok, query)}</span>`;
+                    div.onclick = function() {
+                        input.value = pemasok;
+                        list.style.display = 'none';
+                    };
+                    list.appendChild(div);
+                });
+            }
+            list.style.display = 'block';
+        });
+
+        // Hide list when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.style.display = 'none';
+            }
+        });
+    }
+
+    // Highlight Matching Text
+    function highlightMatch(text, query) {
+        const idx = text.toLowerCase().indexOf(query.toLowerCase());
+        if (idx === -1) return text;
+        return text.substring(0, idx) + 
+               `<mark style="background:#fef08a; padding:0 2px;">${text.substring(idx, idx + query.length)}</mark>` + 
+               text.substring(idx + query.length);
+    }
+
+    // =========================================================================
+    // FORM LOGIC (HITUNG, TAMBAH, HAPUS, SUBMIT)
+    // =========================================================================
+
     function hitungTotal() {
         const qty = parseFloat(document.getElementById('qty').value) || 0;
         const hargaSatuan = parseFloat(document.getElementById('hargaSatuan').value) || 0;
@@ -475,23 +598,21 @@
         document.getElementById('totalHarga').setAttribute('data-raw', total);
     }
 
-    // Format Number ke Rupiah
     function formatRupiah(number) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
     }
 
-    // Tambah Item ke Tabel Sementara (Collect)
     function tambahKeTabel() {
-        const namaBarang = document.getElementById('namaBarang').value;
-        const kodeBarang = document.getElementById('kodeBarang').value;
-        const satuan = document.getElementById('satuan').value;
+        const namaBarang = document.getElementById('namaBarangInput').value.trim();
+        const kodeBarang = document.getElementById('kodeBarang').value.trim();
+        const satuan = document.getElementById('satuan').value.trim();
         const qty = parseFloat(document.getElementById('qty').value) || 0;
         const hargaSatuan = parseFloat(document.getElementById('hargaSatuan').value) || 0;
         const diskon = parseFloat(document.getElementById('diskon').value) || 0;
         const totalHarga = parseFloat(document.getElementById('totalHarga').getAttribute('data-raw')) || 0;
 
         if (!namaBarang) {
-            alert('Pilih nama barang terlebih dahulu!');
+            alert('Masukkan nama barang terlebih dahulu!');
             return;
         }
         if (qty <= 0) {
@@ -519,7 +640,6 @@
         resetItemForm();
     }
 
-    // Render Tabel Item
     function renderTabel() {
         const tbody = document.getElementById('bodyTabel');
         tbody.innerHTML = '';
@@ -541,9 +661,9 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${index + 1}</td>
-                <td><span class="badge" style="background:#f1f5f9; color:#334155;">${item.kodeBarang}</span></td>
+                <td><span class="badge" style="background:#f1f5f9; color:#334155;">${item.kodeBarang || '-'}</span></td>
                 <td><strong>${item.namaBarang}</strong></td>
-                <td>${item.satuan}</td>
+                <td>${item.satuan || '-'}</td>
                 <td style="text-align: center;">${item.qty}</td>
                 <td style="text-align: right;">${formatRupiah(item.hargaSatuan)}</td>
                 <td style="text-align: right;">${formatRupiah(item.diskon)}</td>
@@ -560,15 +680,13 @@
         document.getElementById('grandTotalDisplay').innerText = formatRupiah(grandTotal);
     }
 
-    // Hapus Item dari Tabel
     function hapusItem(id) {
         collectedItems = collectedItems.filter(item => item.id !== id);
         renderTabel();
     }
 
-    // Reset Form Input Item
     function resetItemForm() {
-        document.getElementById('namaBarang').value = '';
+        document.getElementById('namaBarangInput').value = '';
         document.getElementById('kodeBarang').value = '';
         document.getElementById('satuan').value = '';
         document.getElementById('qty').value = 1;
@@ -577,7 +695,6 @@
         document.getElementById('totalHarga').value = 'Rp 0';
     }
 
-    // Submit Resume Tabel ke Google Spreadsheet
     function submitKeSpreadsheet() {
         const noNota = document.getElementById('noNota').value.trim();
         const tglPembelian = document.getElementById('tglPembelian').value;
@@ -599,41 +716,30 @@
             items: collectedItems
         };
 
-        if (SCRIPT_URL && !SCRIPT_URL.includes("YOUR_DEPLOYED_WEB_APP_ID_HERE")) {
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Data...';
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Data...';
 
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            .then(() => {
-                alert('Berhasil! Data resume pembelian telah dikirim ke Sheet "DATA PEMBELIAN".');
-                collectedItems = [];
-                renderTabel();
-                document.getElementById('noNota').value = '';
-                document.getElementById('namaSupplier').value = '';
-            })
-            .catch(err => {
-                alert('Gagal mengirim data: ' + err.message);
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Resume ke Spreadsheet (DATA PEMBELIAN)';
-            });
-        } else {
-            // Simulasi jika variabel SCRIPT_URL belum diganti dengan Web App ID asli
-            console.log('Payload Data Pembelian:', payload);
-            alert(`[MODE SIMULASI]
-Nota: ${noNota}
-Total Item: ${collectedItems.length}
-Grand Total: ${document.getElementById('grandTotalDisplay').innerText}
-
-*Catatan: Ganti variabel 'SCRIPT_URL' di bagian <script> dengan Web App URL Apps Script Anda.`);
-        }
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert('Berhasil! Data resume pembelian telah dikirim ke Sheet "DATA PEMBELIAN".');
+            collectedItems = [];
+            renderTabel();
+            document.getElementById('noNota').value = '';
+            document.getElementById('namaSupplier').value = '';
+        })
+        .catch(err => {
+            alert('Gagal mengirim data: ' + err.message);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Resume ke Spreadsheet (DATA PEMBELIAN)';
+        });
     }
 </script>
 </body>
