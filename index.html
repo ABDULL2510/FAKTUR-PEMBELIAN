@@ -340,7 +340,7 @@
                 <label>Tanggal Pembelian</label>
                 <input type="date" id="tglPembelian">
             </div>
-            <!-- Input Pemasok dengan Sugesti Auto-fetch (Sheet: OPERATOR BARANG Col F) -->
+            <!-- Input Pemasok dengan Sugesti Auto-fetch -->
             <div class="form-group">
                 <label>Nama Pemasok / Supplier</label>
                 <input type="text" id="namaSupplier" placeholder="Ketik untuk mencari pemasok..." autocomplete="off">
@@ -349,9 +349,9 @@
         </div>
 
         <!-- Form Input Item -->
-        <form id="itemForm">
+        <form id="itemForm" onsubmit="event.preventDefault(); tambahKeTabel();">
             <div class="form-grid">
-                <!-- Input Nama Barang dengan Sugesti Pencarian Keyword Terdekat (Sheet: OPERATOR BARANG Col B) -->
+                <!-- Input Nama Barang dengan Sugesti Pencarian Keyword Terdekat -->
                 <div class="form-group full-width">
                     <label>Cari Nama Barang (Keyword Terdekat)</label>
                     <input type="text" id="namaBarangInput" placeholder="Ketik kata kunci nama barang..." autocomplete="off" required>
@@ -441,7 +441,7 @@
 
 <script>
     // =========================================================================
-    // URL GOOGLE APPS SCRIPT WEB APP
+    // URL GOOGLE APPS SCRIPT WEB APP (DIPERBARUI)
     // =========================================================================
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3qR865FBNueoCKPEe0FvECVWmXQ3QZlUs0Lf6AND6jPQVhhvurZB9APviqU3D9Q3A/exec";
 
@@ -494,8 +494,8 @@
 
             // Filter keyword terdekat
             const filtered = masterBarang.filter(item => 
-                item.nama.toLowerCase().includes(query) || 
-                item.kode.toLowerCase().includes(query)
+                (item.nama && item.nama.toLowerCase().includes(query)) || 
+                (item.kode && item.kode.toLowerCase().includes(query))
             );
 
             if (filtered.length === 0) {
@@ -545,7 +545,7 @@
                 return;
             }
 
-            // Filter supplier terdekat dari Col F
+            // Filter supplier terdekat
             const filtered = masterPemasok.filter(pemasok => pemasok.toLowerCase().includes(query));
 
             if (filtered.length === 0) {
@@ -575,6 +575,7 @@
 
     // Highlight Matching Text
     function highlightMatch(text, query) {
+        if (!text) return '';
         const idx = text.toLowerCase().indexOf(query.toLowerCase());
         if (idx === -1) return text;
         return text.substring(0, idx) + 
@@ -693,6 +694,7 @@
         document.getElementById('hargaSatuan').value = '';
         document.getElementById('diskon').value = 0;
         document.getElementById('totalHarga').value = 'Rp 0';
+        document.getElementById('totalHarga').setAttribute('data-raw', 0);
     }
 
     function submitKeSpreadsheet() {
@@ -710,9 +712,9 @@
         }
 
         const payload = {
-            noNota,
-            tglPembelian,
-            namaSupplier,
+            noNota: noNota,
+            tglPembelian: tglPembelian,
+            namaSupplier: namaSupplier,
             items: collectedItems
         };
 
@@ -720,6 +722,7 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Data...';
 
+        // Menggunakan mode no-cors untuk kompatibilitas Apps Script POST request
         fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -727,7 +730,7 @@
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert('Berhasil! Data resume pembelian telah dikirim ke Sheet "DATA PEMBELIAN".');
+            alert('Berhasil! Data resume pembelian telah dikirim ke Google Sheets.');
             collectedItems = [];
             renderTabel();
             document.getElementById('noNota').value = '';
