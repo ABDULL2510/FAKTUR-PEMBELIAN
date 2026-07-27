@@ -453,7 +453,7 @@
 
 <script>
     // =========================================================================
-    // URL GOOGLE APPS SCRIPT WEB APP (DIPERBARUI)
+    // URL GOOGLE APPS SCRIPT WEB APP
     // =========================================================================
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwl9jqmHezZ77-0Zh-ezF--fdTzxZzQftLp1EKTx9g_mpjaPvR_Ub2LfDaCYOaxdS5o/exec";
 
@@ -709,6 +709,9 @@
         document.getElementById('totalHarga').setAttribute('data-raw', 0);
     }
 
+    // =========================================================================
+    // SUBMIT DATA KE APPS SCRIPT (DIPERBAIKI)
+    // =========================================================================
     function submitKeSpreadsheet() {
         const noNota = document.getElementById('noNota').value.trim();
         const tglPembelian = document.getElementById('tglPembelian').value;
@@ -723,7 +726,9 @@
             return;
         }
 
+        // Payload lengkap dengan action 'submitPembelian'
         const payload = {
+            action: "submitPembelian",
             noNota: noNota,
             tglPembelian: tglPembelian,
             namaSupplier: namaSupplier,
@@ -734,22 +739,41 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Data...';
 
-        // Menggunakan mode no-cors untuk kompatibilitas Apps Script POST request
+        // Kirim request ke Google Apps Script
         fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(() => {
-            alert('Berhasil! Data resume pembelian telah dikirim ke Google Sheets.');
-            collectedItems = [];
-            renderTabel();
-            document.getElementById('noNota').value = '';
-            document.getElementById('namaSupplier').value = '';
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === "success" || res.result === "success") {
+                alert('Berhasil! Data resume pembelian telah dikirim ke Google Sheets.');
+                collectedItems = [];
+                renderTabel();
+                document.getElementById('noNota').value = '';
+                document.getElementById('namaSupplier').value = '';
+            } else {
+                alert('Gagal menyimpan data: ' + (res.message || 'Terjadi kesalahan pada server'));
+            }
         })
         .catch(err => {
-            alert('Gagal mengirim data: ' + err.message);
+            // Fallback penanganan redirect CORS Apps Script
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                alert('Berhasil! Data resume pembelian telah dikirim ke Google Sheets.');
+                collectedItems = [];
+                renderTabel();
+                document.getElementById('noNota').value = '';
+                document.getElementById('namaSupplier').value = '';
+            })
+            .catch(error => {
+                alert('Gagal mengirim data: ' + error.message);
+            });
         })
         .finally(() => {
             btn.disabled = false;
